@@ -15,11 +15,6 @@ public class FENCER : MonoBehaviour {
 
 	public float smoothTime = 0.3f;
 
-	private Vector3[] throwPositions = new Vector3[10];
-	private Vector3 throwTarget;
-	private int throwIndex = 0;
-	private bool throwing = false;
-	private int throwFrames = 5;
 	private Vector3 velocity;
 
 	[Range (0.1f, 2f)]
@@ -45,57 +40,20 @@ public class FENCER : MonoBehaviour {
 			var newPos = Vector3.zero;
 			var lerpDistance = lerpPercent;
 			var distance = Vector3.Distance (player.transform.position, body.position);
-			//lerpPercent = 0.15f;
 
-			if (!throwing && distance > maxDistance) {
-				for (int i = 0; i < throwPositions.Length; i++) {
-					throwTarget += throwPositions[i];
-					throwPositions[i] = player.transform.position;
-				}
-				Vector3.Normalize (throwTarget);
-				throwTarget *= throwPower;
-				newPos = throwTarget;
-				throwing = true;
-			} else if (throwing) {
-				if (throwFrames == 0) {
-					newPos = player.transform.position;
-				} else {
-					throwTarget *= 0.8f;
-					newPos = throwTarget;
-					throwFrames--;
-				}
+			var playerToMouseRay = new Ray (player.transform.position, (hit.point - player.transform.position).normalized);
+			RaycastHit hit2;
 
-				if (distance <= maxDistance) {
-					throwing = false;
-					throwFrames = 5;
-				}
+			if (Physics.Raycast (playerToMouseRay, out hit2, maxDistance)) {
+				newPos = hit2.point;
 			} else {
-				//if (maxDistance - distance < 1 / maxDistance) {
-				//	lerpDistance = lerpPercent * 0.3f;
-				//}
+				newPos = hit.point;
+			}
+			newPos.y = swordHeight;
+			debugPos = newPos;
 
-				var playerToMouseRay = new Ray (player.transform.position, (hit.point - player.transform.position).normalized);
-				RaycastHit hit2;
-
-				if (Physics.Raycast (playerToMouseRay, out hit2, maxDistance)) {
-					newPos = hit2.point;
-				} else {
-					newPos = hit.point;
-				}
-				newPos.y = swordHeight;
-				debugPos = newPos;
-
-				if (distance > maxDistance) {
-					newPos = newPos - (newPos / maxDistance);
-				}
-
-				throwPositions[throwIndex] = newPos;
-				throwIndex++;
-				if (throwIndex >= throwPositions.Length - 1) {
-					throwIndex = 0;
-				}
-
-				throwing = false;
+			if (distance > maxDistance) {
+				newPos = newPos - (newPos / maxDistance);
 			}
 
 			//smoothTime = Mathf.Clamp (1 - (1 / distance), 0.2f, 0.3f);
@@ -109,9 +67,7 @@ public class FENCER : MonoBehaviour {
 
 	private void OnDrawGizmos () {
 		Gizmos.DrawWireSphere (player.transform.position, maxDistance);
-		foreach (var v in throwPositions) {
-			Gizmos.DrawWireSphere (v, 0.2f);
-		}
+
 		Gizmos.color = Color.red;
 		Gizmos.DrawSphere (debugPos, 0.25f);
 	}
